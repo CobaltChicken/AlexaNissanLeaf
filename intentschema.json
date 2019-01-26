@@ -107,10 +107,27 @@
                         "what percent",
                         "what percent battery",
                         "battery",
-                        "battery percentage"
+                        "battery percentage",
+                        "charge"
                     ]
                 },
                 {
+                    "name" : "EnergyIntent",
+                    "slots": [],
+                    "samples": [
+                        "how many kilowatts",
+                        "how many bars",
+                        "how much energy",
+                        "hot much energy it has",
+                        "precis",
+                        "how much power",
+                        "how much power it has",
+                        "bars"
+                    ]
+
+
+                },
+                { 
                     "name": "ChargingIntent",
                     "slots": [],
                     "samples": [
