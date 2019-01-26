@@ -171,7 +171,9 @@ exports.handler = (event, context) => {
 		// Shared callbacks.
 		const exitCallback = () => context.succeed(buildResponse("Goodbye!"));
 		const helpCallback = () => context.succeed(buildResponse("What would you like to do? You can preheat the car or ask for battery status.", null, false));
-		car.setLoginFailure(() => sendResponse("Authorisation Failure", "Unable to login to Nissan Services, please check your login credentials."));
+		car.setLoginFailure(() => sendResponse("Authorisation Failure", "Unable to login to Nissan Services, credentials are wrong, or service is down."));
+		// try to get socket timeout before Lambda timeout
+		car.setTimoutSource(() => context.getRemainingTimeInMillis() - 500);
 
 		// Handle launches without intents by just asking what to do.		
 		if (event.request.type === "LaunchRequest") {

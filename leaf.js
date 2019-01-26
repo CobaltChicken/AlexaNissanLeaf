@@ -15,7 +15,7 @@ let region_code = process.env.regioncode;
 let username = process.env.username; // Your NissanConnect username or email address.
 let password = querystring.escape(encrypt(process.env.password)); // Your NissanConnect account password.
 
-let sessionid, vin, loginFailureCallback;
+let sessionid, vin, loginFailureCallback, carname, timeoutsource;
 
 
 /**
@@ -37,36 +37,53 @@ function sendRequest(action, requestData, successCallback, failureCallback) {
 			"Content-Length": Buffer.byteLength(requestData),
 		}
 	};
-
-	const req = https.request(options, resp => {
-		if (resp.statusCode < 200 || resp.statusCode > 300) {
-			console.log(`Failed to send request ${action} (${resp.statusCode}: ${resp.statusMessage})`);
-			if (failureCallback)
-				failureCallback();
-			return;
+	let timeout = timeoutsource ? timeoutsource() : -1;
+	if (timeoutsource && timeout <= 0) {
+		console.log(`No time left for ${action}`);
+		if (failureCallback) {
+			failureCallback();
 		}
 
-		console.log(`Successful request ${action} (${resp.statusCode}: ${resp.statusMessage})`);
-		let respData = "";
+	} else {
+		const req = https.request(options, resp => {
+			if (resp.statusCode < 200 || resp.statusCode > 300) {
+				console.log(`Failed to send request ${action} (${resp.statusCode}: ${resp.statusMessage})`);
+				if (failureCallback)
+					failureCallback();
+				return;
+			}
 
-		resp.on("data", c => {
-			respData += c.toString();
+			console.log(`Successful request ${action} (${resp.statusCode}: ${resp.statusMessage})`);
+			let respData = "";
+
+			resp.on("data", c => {
+				respData += c.toString();
+			});
+			resp.on("end", () => {
+				let json = respData && respData.length ? JSON.parse(respData) : null;
+				if (json.status == 200) {
+					successCallback(respData && respData.length ? JSON.parse(respData) : null);
+				} else {
+					console.log(json);
+					if (failureCallback) {
+						failureCallback();
+					}
+				}
+			});
 		});
-		resp.on("end", () => {
-			let json = respData && respData.length ? JSON.parse(respData) : null;
-			if (json.status == 200) {
-				successCallback(respData && respData.length ? JSON.parse(respData) : null);
-			} else {
-				console.log(json);
+		if (timeoutsource) {
+			req.setTimeout(timeout, (evt) => {
+				console.log(`Request ${action} timed out and aborting`);
+				req.abort();
 				if (failureCallback) {
 					failureCallback();
 				}
-			}
-		});
-	});
+			});
+		}
 
-	req.write(requestData);
-	req.end();
+		req.write(requestData);
+		req.end();
+	}
 }
 
 /**
@@ -81,7 +98,6 @@ function login(successCallback) {
 		"&RegionCode=" + region_code +
 		"&Password=" + password,
 		loginResponse => {
-			console.log("Login response: " + JSON.stringify(loginResponse));
 			if (loginResponse.status !== 200) {
 				loginFailureCallback();
 			} else {
@@ -90,9 +106,11 @@ function login(successCallback) {
 				if (loginResponse.VehicleInfoList) {
 					sessionid = encodeURIComponent(loginResponse.VehicleInfoList.vehicleInfo[0].custom_sessionid);
 					vin = encodeURIComponent(loginResponse.VehicleInfoList.vehicleInfo[0].vin);
+					carname = loginResponse.VehicleInfoList.vehicleInfo[0].nickname;
 				} else {
 					sessionid = encodeURIComponent(loginResponse.vehicleInfo[0].custom_sessionid);
 					vin = encodeURIComponent(loginResponse.vehicleInfo[0].vin);
+					carname = loginResponse.vehicleInfo[0].nickname;
 				}
 				successCallback();
 			}
@@ -190,7 +208,16 @@ exports.sendUpdateCommand = (successCallback, failureCallback) => {
 exports.setLoginFailure = (callBack) => {
 	loginFailureCallback = callBack;
 };
-
+/**
+ * Set a source of timeout 
+ * @param source Function returning timeout in MS
+ */
+exports.setTimoutSource = (source) => {
+	timeoutsource = source;
+}
+exports.getCarName = () => {
+	return carname
+};
 /**
 * Encrypt the password for use with API calls.
 **/
