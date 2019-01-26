@@ -51,7 +51,26 @@ function sendProgressMessage(message, event) {
 	};
 	sendProgressiveResponseRequest(event, requestData, null, null);
 }
+// barcount is half figure
+function bars(barcount) {
+	barcount /= 10;
+	return Math.floor(barcount  / 2) + ((barcount & 1) === 0 ? '' : ' and a half');
+}
+// just charge status
+function energyResponse(battery) {
+	let result = `You have ${Math.round(battery.BatteryStatusRecords.BatteryStatus.BatteryRemainingAmountWH / 1000)} kilowatt hours`;
+	result += ` which gives you ${bars(battery.BatteryStatusRecords.BatteryStatus.BatteryRemainingAmount)} out of ${bars(battery.BatteryStatusRecords.BatteryStatus.BatteryCapacity)} bars`;
+	return result;
+}
 
+function asOf(battery) {
+	let timestamp = battery.BatteryStatusRecords.NotificationDateAndTime;
+	if(timestamp) {
+		return `as of ${timestamp.substr(-5)} `
+	} else {
+		return '';
+	}
+}
 // Build a response to send back to Alexa.
 function buildResponse(output, card, shouldEndSession) {
 	return {
@@ -69,7 +88,7 @@ function buildResponse(output, card, shouldEndSession) {
 
 // Helper to build the text response for range/battery status.
 function buildBatteryStatus(battery) {
-	console.log(battery);
+	console.log(JSON.stringify(battery));
 	const milesPerMeter = 0.000621371;
 	let response = `You have ${Math.floor((battery.BatteryStatusRecords.BatteryStatus.BatteryRemainingAmount / battery.BatteryStatusRecords.BatteryStatus.BatteryCapacity) * 100)}% battery which Nissan's Guessometer says will get you ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOn * milesPerMeter)} miles with the air conditioning on, or ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOff * milesPerMeter)} with the air conditioner off. Based on what I know about the Nissan LEAF, you can expect to get as little as ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOn * milesPerMeter * 0.8)} miles in worse-case conditions or ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOff * milesPerMeter * 1.2)} miles in ideal conditions. `;
 
@@ -152,7 +171,7 @@ exports.handler = (event, context) => {
 		// Shared callbacks.
 		const exitCallback = () => context.succeed(buildResponse("Goodbye!"));
 		const helpCallback = () => context.succeed(buildResponse("What would you like to do? You can preheat the car or ask for battery status.", null, false));
-		const loginFailureCallback = () => sendResponse("Authorisation Failure", "Unable to login to Nissan Services, please check your login credentials.");
+		car.setLoginFailure(() => sendResponse("Authorisation Failure", "Unable to login to Nissan Services, please check your login credentials."));
 
 		// Handle launches without intents by just asking what to do.		
 		if (event.request.type === "LaunchRequest") {
@@ -199,8 +218,14 @@ exports.handler = (event, context) => {
 					break;
 				case "ChargeIntent":
 					car.getBatteryStatus(
-						response => sendResponse("Car Battery Status", buildBatteryStatus(response)),
+						response => sendResponse("Car Battery Status", asOf(response) + buildBatteryStatus(response)),
 						() => sendResponse("Car Battery Status", "Unable to get car battery status.")
+					);
+					break;
+				case "EnergyIntent":
+					car.getBatteryStatus(
+						response => sendResponse("State of Charge", asOf(response) + energyResponse(response) ),
+						() => sendResponse("Energy Status", "Unable to get energy status")
 					);
 					break;
 				case "ChargingIntent":

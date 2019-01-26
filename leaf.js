@@ -17,6 +17,7 @@ let password = querystring.escape(encrypt(process.env.password)); // Your Nissan
 
 let sessionid, vin, loginFailureCallback;
 
+
 /**
 * Sends a request to the Nissan API.
 *
@@ -25,7 +26,7 @@ let sessionid, vin, loginFailureCallback;
 * successCallback
 * failureCallback
 **/
-function sendRequest(action, requestData, successCallback, failureCallback) {	
+function sendRequest(action, requestData, successCallback, failureCallback) {
 	const options = {
 		hostname: "gdcportalgw.its-mo.com",
 		port: 443,
@@ -55,12 +56,15 @@ function sendRequest(action, requestData, successCallback, failureCallback) {
 			let json = respData && respData.length ? JSON.parse(respData) : null;
 			if (json.status == 200) {
 				successCallback(respData && respData.length ? JSON.parse(respData) : null);
-			}else {
+			} else {
 				console.log(json);
+				if (failureCallback) {
+					failureCallback();
+				}
 			}
 		});
 	});
-	
+
 	req.write(requestData);
 	req.end();
 }
@@ -71,24 +75,29 @@ function sendRequest(action, requestData, successCallback, failureCallback) {
 * successCallback
 **/
 function login(successCallback) {
-	sendRequest("UserLoginRequest.php", 
-	"UserId=" + username +
-	"&initial_app_strings=" + initial_app_strings +
-	"&RegionCode=" + region_code +
-	"&Password=" + password,
-	loginResponse => {
-		// Get the session id and VIN for future API calls.
-		// Sometimes the results from the API include a VehicleInfoList array, sometimes they omit it!
-		if (loginResponse.VehicleInfoList) {
-			sessionid = encodeURIComponent(loginResponse.VehicleInfoList.vehicleInfo[0].custom_sessionid);
-			vin = encodeURIComponent(loginResponse.VehicleInfoList.vehicleInfo[0].vin);
-		} else  {
-			sessionid = encodeURIComponent(loginResponse.vehicleInfo[0].custom_sessionid);
-			vin = encodeURIComponent(loginResponse.vehicleInfo[0].vin);			
-		}
-		successCallback();
-	}, 
-	loginFailureCallback);
+	sendRequest("UserLoginRequest.php",
+		"UserId=" + username +
+		"&initial_app_strings=" + initial_app_strings +
+		"&RegionCode=" + region_code +
+		"&Password=" + password,
+		loginResponse => {
+			console.log("Login response: " + JSON.stringify(loginResponse));
+			if (loginResponse.status !== 200) {
+				loginFailureCallback();
+			} else {
+				// Get the session id and VIN for future API calls.
+				// Sometimes the results from the API include a VehicleInfoList array, sometimes they omit it!
+				if (loginResponse.VehicleInfoList) {
+					sessionid = encodeURIComponent(loginResponse.VehicleInfoList.vehicleInfo[0].custom_sessionid);
+					vin = encodeURIComponent(loginResponse.VehicleInfoList.vehicleInfo[0].vin);
+				} else {
+					sessionid = encodeURIComponent(loginResponse.vehicleInfo[0].custom_sessionid);
+					vin = encodeURIComponent(loginResponse.vehicleInfo[0].vin);
+				}
+				successCallback();
+			}
+		},
+		loginFailureCallback);
 }
 
 /**
@@ -96,11 +105,19 @@ function login(successCallback) {
 **/
 exports.getBatteryStatus = (successCallback, failureCallback) => {
 	login(() => sendRequest("BatteryStatusRecordsRequest.php",
-	"custom_sessionid=" + sessionid +
-	"&RegionCode=" + region_code +
-	"&VIN=" + vin,
-	successCallback,
-	failureCallback));
+		"custom_sessionid=" + sessionid +
+		"&RegionCode=" + region_code +
+		"&VIN=" + vin,
+		successCallback,
+		failureCallback));
+}
+exports.getCabinTemperature = (successCallback, failureCallback) => {
+	login(() => sendRequest("auth-encrypt.php",
+		"custom_sessionid=" + sessionid +
+		"&RegionCode=" + region_code +
+		"&VIN=" + vin,
+		successCallback,
+		failureCallback));
 }
 
 /**
@@ -108,12 +125,12 @@ exports.getBatteryStatus = (successCallback, failureCallback) => {
 **/
 exports.sendPreheatCommand = (successCallback, failureCallback) => {
 	login(() => sendRequest("ACRemoteRequest.php",
-	"UserId=" + username +
-	"&custom_sessionid=" + sessionid +
-	"&RegionCode=" + region_code +
-	"&VIN=" + vin,
-	successCallback,
-	failureCallback));
+		"UserId=" + username +
+		"&custom_sessionid=" + sessionid +
+		"&RegionCode=" + region_code +
+		"&VIN=" + vin,
+		successCallback,
+		failureCallback));
 }
 
 /**
@@ -121,12 +138,12 @@ exports.sendPreheatCommand = (successCallback, failureCallback) => {
 **/
 exports.sendCoolingCommand = (successCallback, failureCallback) => {
 	login(() => sendRequest("ACRemoteRequest.php",
-	"UserId=" + username +
-	"&custom_sessionid=" + sessionid +
-	"&RegionCode=" + region_code +
-	"&VIN=" + vin,
-	successCallback,
-	failureCallback));
+		"UserId=" + username +
+		"&custom_sessionid=" + sessionid +
+		"&RegionCode=" + region_code +
+		"&VIN=" + vin,
+		successCallback,
+		failureCallback));
 }
 
 /**
@@ -134,12 +151,12 @@ exports.sendCoolingCommand = (successCallback, failureCallback) => {
 **/
 exports.sendClimateControlOffCommand = (successCallback, failureCallback) => {
 	login(() => sendRequest("ACRemoteOffRequest.php",
-	"UserId=" + username +
-	"&custom_sessionid=" + sessionid +
-	"&RegionCode=" + region_code +
-	"&VIN=" + vin,
-	successCallback,
-	failureCallback));
+		"UserId=" + username +
+		"&custom_sessionid=" + sessionid +
+		"&RegionCode=" + region_code +
+		"&VIN=" + vin,
+		successCallback,
+		failureCallback));
 }
 
 /**
@@ -147,12 +164,12 @@ exports.sendClimateControlOffCommand = (successCallback, failureCallback) => {
 **/
 exports.sendStartChargingCommand = (successCallback, failureCallback) => {
 	login(() => sendRequest("BatteryRemoteChargingRequest.php",
-	"UserId=" + username +
-	"&custom_sessionid=" + sessionid +
-	"&RegionCode=" + region_code +
-	"&VIN=" + vin,
-	successCallback,
-	failureCallback));
+		"UserId=" + username +
+		"&custom_sessionid=" + sessionid +
+		"&RegionCode=" + region_code +
+		"&VIN=" + vin,
+		successCallback,
+		failureCallback));
 }
 
 /**
@@ -160,13 +177,19 @@ exports.sendStartChargingCommand = (successCallback, failureCallback) => {
 **/
 exports.sendUpdateCommand = (successCallback, failureCallback) => {
 	login(() => sendRequest("BatteryStatusCheckRequest.php",
-	"UserId=" + username +
-	"&custom_sessionid=" + sessionid +
-	"&RegionCode=" + region_code +
-	"&VIN=" + vin,
-	successCallback,
-	failureCallback));
+		"UserId=" + username +
+		"&custom_sessionid=" + sessionid +
+		"&RegionCode=" + region_code +
+		"&VIN=" + vin,
+		successCallback,
+		failureCallback));
 }
+/**
+ * Set login failure callback
+ */
+exports.setLoginFailure = (callBack) => {
+	loginFailureCallback = callBack;
+};
 
 /**
 * Encrypt the password for use with API calls.
