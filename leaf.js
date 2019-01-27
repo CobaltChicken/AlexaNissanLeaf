@@ -116,8 +116,7 @@ function login(successCallback) {
 			}
 		},
 		loginFailureCallback);
-}
-
+};
 /**
 * Get the battery information from the API.
 **/
@@ -128,7 +127,7 @@ exports.getBatteryStatus = (successCallback, failureCallback) => {
 		"&VIN=" + vin,
 		successCallback,
 		failureCallback));
-}
+};
 exports.getCabinTemperature = (successCallback, failureCallback) => {
 	login(() => sendRequest("auth-encrypt.php",
 		"custom_sessionid=" + sessionid +
@@ -136,7 +135,7 @@ exports.getCabinTemperature = (successCallback, failureCallback) => {
 		"&VIN=" + vin,
 		successCallback,
 		failureCallback));
-}
+};
 
 /**
 * Enable the climate control in the car.
@@ -149,7 +148,7 @@ exports.sendPreheatCommand = (successCallback, failureCallback) => {
 		"&VIN=" + vin,
 		successCallback,
 		failureCallback));
-}
+};
 
 /**
 * Enable the climate control in the car.
@@ -162,7 +161,7 @@ exports.sendCoolingCommand = (successCallback, failureCallback) => {
 		"&VIN=" + vin,
 		successCallback,
 		failureCallback));
-}
+};
 
 /**
 * Disable the climate control in the car.
@@ -175,7 +174,7 @@ exports.sendClimateControlOffCommand = (successCallback, failureCallback) => {
 		"&VIN=" + vin,
 		successCallback,
 		failureCallback));
-}
+};
 
 /**
 * Start charging the car.
@@ -188,7 +187,7 @@ exports.sendStartChargingCommand = (successCallback, failureCallback) => {
 		"&VIN=" + vin,
 		successCallback,
 		failureCallback));
-}
+};
 
 /**
 * Request the API fetch updated data from the car.
@@ -201,7 +200,7 @@ exports.sendUpdateCommand = (successCallback, failureCallback) => {
 		"&VIN=" + vin,
 		successCallback,
 		failureCallback));
-}
+};
 /**
  * Set login failure callback
  */
@@ -214,9 +213,9 @@ exports.setLoginFailure = (callBack) => {
  */
 exports.setTimoutSource = (source) => {
 	timeoutsource = source;
-}
+};
 exports.getCarName = () => {
-	return carname
+	return carname;
 };
 /**
 * Encrypt the password for use with API calls.
