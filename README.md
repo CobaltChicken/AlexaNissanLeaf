@@ -3,6 +3,13 @@ An Alexa Skill to control the Nissan Leaf (and eNV200).
 
 This version contains several improvements not (yet) contained in the version created by ScottHelme. You can [view the changes here](https://github.com/arussell/AlexaNissanLeaf/commits/master).
 
+Further work by me Malcolm McMahon at (https://github.com/CobaltChicken/AlexaNissanLeaf/commits/malcolm)
+
+I've added two new environmental variables.
+
+batterysize (in KwH)
+leafpic  Url of an image for the home cards
+
 ## Setup instructions
 You can follow [Toby Riding's great step-by-step guide on the wiki](https://github.com/arussell/AlexaNissanLeaf/wiki).
 
@@ -20,6 +27,7 @@ The skill has the following features:
 * Cooling - Activate the climate control
 * Climate Control Off - Turn off the climate control
 * Update - Download the latest data from the car
+* Energy - Short summary of battery SOC
 * Range - Ask how much range you have
 * Battery - Ask how much battery you have
 * Charging - Ask if the car is currently charging
@@ -41,7 +49,8 @@ These are examples of some of the interactions with Alexa:
 * Alexa, ask my car if it's charging.
 * Alexa, ask my car if it's connected to power.
 * Alexa, ask my car to start charging.
-
+* Alexa, ask my car how many bars
+* Alexa, ask my car how much energy
 ## Disclaimers
 
 THIS SOFTWARE IS PROVIDED BY THE DEVELOPERS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE DEVELOPERS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
