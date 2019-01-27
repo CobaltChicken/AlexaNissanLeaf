@@ -5,9 +5,10 @@ let car = require("./leaf");
 
 // Require https so we can send Progressive Responses
 let https = require("https");
-
+//
+const batterySize = process.env.batterysize ? process.env.batterysize : 30;
 // Send a request to the Progressive Response service
-function sendProgressiveResponseRequest(event, requestData, successCallback, failureCallback) {	
+function sendProgressiveResponseRequest(event, requestData, successCallback, failureCallback) {
 	const options = {
 		hostname: "api.eu.amazonalexa.com",
 		port: 443,
@@ -29,7 +30,7 @@ function sendProgressiveResponseRequest(event, requestData, successCallback, fai
 
 		console.log(`Successful progressive response request (${resp.statusCode}: ${resp.statusMessage})`);
 	});
-	
+
 	req.write(JSON.stringify(requestData));
 	req.end();
 }
@@ -42,11 +43,11 @@ function sendProgressMessage(message, event) {
 	// build the progressive response directive
 	const requestData = {
 		header: {
-	    	 requestId,
+			requestId,
 		},
-	    directive: {
-	    	type: 'VoicePlayer.Speak',
-	    	speech: message,
+		directive: {
+			type: 'VoicePlayer.Speak',
+			speech: message,
 		},
 	};
 	sendProgressiveResponseRequest(event, requestData, null, null);
@@ -54,7 +55,7 @@ function sendProgressMessage(message, event) {
 // barcount is half figure
 function bars(barcount) {
 	barcount /= 10;
-	return Math.floor(barcount  / 2) + ((barcount & 1) === 0 ? '' : ' and a half');
+	return Math.floor(barcount / 2) + ((barcount & 1) === 0 ? '' : ' and a half');
 }
 // just charge status
 function energyResponse(battery) {
@@ -65,8 +66,8 @@ function energyResponse(battery) {
 
 function asOf(battery) {
 	let timestamp = battery.BatteryStatusRecords.NotificationDateAndTime;
-	if(timestamp) {
-		return `as of ${timestamp.substr(-5)} `
+	if (timestamp) {
+		return `as of ${timestamp.substr(-5)} `;
 	} else {
 		return '';
 	}
@@ -104,41 +105,68 @@ function buildBatteryStatus(battery) {
 
 	return response + ".";
 }
+// Helper to build the text response for range/battery status.
+function buildBatteryCard(battery) {
+	const milesPerMeter = 0.000621371;
+	let response = `As of:\t${battery.BatteryStatusRecords.NotificationDateAndTime}\nYou have ${Math.round(battery.BatteryStatusRecords.BatteryStatus.BatteryRemainingAmountWH * 10 / batterySize) / 100}% battery or ${bars(battery.BatteryStatusRecords.BatteryStatus.BatteryRemainingAmount)} out of ${bars(battery.BatteryStatusRecords.BatteryStatus.BatteryCapacity)} bars\nGOM Estimate\t${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOn * milesPerMeter)} A/C on, or ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOff * milesPerMeter)}  A/C off\nCynical estimate\tBetween ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOn * milesPerMeter * 0.8)} and ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOff * milesPerMeter * 1.2)} miles`;
+	if (battery.BatteryStatusRecords.PluginState == "CONNECTED") {
+		response += "\n\tThe car is plugged in";
+	} else {
+		response += "\n\tThe car is not plugged in";
+	}
+
+	if (battery.BatteryStatusRecords.BatteryStatus.BatteryChargingStatus != "NOT_CHARGING") {
+		response += " and charging";
+	}
+
+	response += ".";
+	return {
+		type: "Standard",
+		title: `Battery status for ${car.getCarName()}`,
+		text: response,
+		image: {
+			largeImageUrl: process.env.leafpic
+		}
+	};
+
+}
 
 // Helper to build the text response for charging status.
 function buildChargingStatus(charging) {
 	let response = "";
-	if(charging.BatteryStatusRecords.BatteryStatus.BatteryChargingStatus == "NOT_CHARGING") {
+	if (charging.BatteryStatusRecords.BatteryStatus.BatteryChargingStatus == "NOT_CHARGING") {
 		response += "Your car is not on charge.";
 	} else {
 		response += "Your car is on charge.";
 	}
-	
+
 	return response;
 }
 
 // Helper to build the text response for connected to power status.
 function buildConnectedStatus(connected) {
 	let response = "";
-	if(connected.BatteryStatusRecords.PluginState == "NOT_CONNECTED") {
+	if (connected.BatteryStatusRecords.PluginState == "NOT_CONNECTED") {
 		response += "Your car is not connected to a charger.";
 	} else {
 		response += "Your car is connected to a charger.";
 	}
-	
+
 	return response;
 }
 
 // Handling incoming requests
 exports.handler = (event, context) => {
-		
-	// Helper to return a response with a card.		
-	const sendResponse = (title, text) => {
-		context.succeed(buildResponse(text, {
+
+	// Helper to return a response with a card./
+	// if card ommited - build one
+	const sendResponse = (title, text, card) => {
+		let theCard = card ? card : {
 			"type": "Simple",
 			"title": title,
 			"content": text
-		}));
+		};
+		context.succeed(buildResponse(text, theCard));
 	};
 
 	try {
@@ -163,7 +191,7 @@ exports.handler = (event, context) => {
 		// Verify the person calling the script. Get your Alexa Application ID here: https://developer.amazon.com/edw/home.html#/skills/list
 		// Click on the skill and look for the "Application ID" field.
 		// Set the applicationId as an environment variable or hard code it here.
-		if(event.session.application.applicationId !== process.env.applicationId) {
+		if (event.session.application.applicationId !== process.env.applicationId) {
 			sendResponse("Invalid Application ID", "You are not allowed to use this service.");
 			return;
 		}
@@ -214,19 +242,21 @@ exports.handler = (event, context) => {
 					break;
 				case "RangeIntent":
 					car.getBatteryStatus(
-						response => sendResponse("Car Range Status", buildBatteryStatus(response)),
+						response => sendResponse("Car Range Status", buildBatteryStatus(response), 
+						buildBatteryCard(response)),
 						() => sendResponse("Car Range Status", "Unable to get car battery status.")
 					);
 					break;
 				case "ChargeIntent":
 					car.getBatteryStatus(
-						response => sendResponse("Car Battery Status", asOf(response) + buildBatteryStatus(response)),
+						response => sendResponse("Car Battery Status", asOf(response) + buildBatteryStatus(response),
+						 buildBatteryCard(response)),
 						() => sendResponse("Car Battery Status", "Unable to get car battery status.")
 					);
 					break;
 				case "EnergyIntent":
 					car.getBatteryStatus(
-						response => sendResponse("State of Charge", asOf(response) + energyResponse(response) ),
+						response => sendResponse("State of Charge", asOf(response) + energyResponse(response), buildBatteryCard(response)),
 						() => sendResponse("Energy Status", "Unable to get energy status")
 					);
 					break;
