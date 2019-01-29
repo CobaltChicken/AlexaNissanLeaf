@@ -9,13 +9,13 @@ var Encryption = require('./encryption.js');
 // Do not change this value, it is static.
 let initial_app_strings = "geORNtsZe5I4lRGjG9GZiA";
 // Possible value are NE (Europe), NNA (North America) and NCI (Canada).
-let region_code = process.env.regioncode;
+let region_code = process.env.regioncode ? process.env.regioncode : 'NE';
 // You should store your username and password as environment variables. 
 // If you don't you can hard code them in the following variables.
 let username = process.env.username; // Your NissanConnect username or email address.
 let password = querystring.escape(encrypt(process.env.password)); // Your NissanConnect account password.
 
-let sessionid, vin, loginFailureCallback, carname, timeoutsource;
+let loginFailureCallback, carname, timeoutsource, storedCredentials;
 
 
 /**
@@ -30,7 +30,7 @@ function sendRequest(action, requestData, successCallback, failureCallback) {
 	const options = {
 		hostname: "gdcportalgw.its-mo.com",
 		port: 443,
-		path: "/gworchest_160803EC/gdc/" + action,
+		path: "/api_v181217_NE/gdc/" + action,
 		method: "POST",
 		headers: {
 			"Content-Type": "application/x-www-form-urlencoded",
@@ -92,47 +92,51 @@ function sendRequest(action, requestData, successCallback, failureCallback) {
 * successCallback
 **/
 function login(successCallback) {
-	sendRequest("UserLoginRequest.php",
-		"UserId=" + username +
-		"&initial_app_strings=" + initial_app_strings +
-		"&RegionCode=" + region_code +
-		"&Password=" + password,
-		loginResponse => {
-			if (loginResponse.status !== 200) {
-				loginFailureCallback();
-			} else {
-				// Get the session id and VIN for future API calls.
-				// Sometimes the results from the API include a VehicleInfoList array, sometimes they omit it!
-				if (loginResponse.VehicleInfoList) {
-					sessionid = encodeURIComponent(loginResponse.VehicleInfoList.vehicleInfo[0].custom_sessionid);
-					vin = encodeURIComponent(loginResponse.VehicleInfoList.vehicleInfo[0].vin);
-					carname = loginResponse.VehicleInfoList.vehicleInfo[0].nickname;
+	if (storedCredentials) {
+		console.log('Reusing credentials');
+		successCallback(storedCredentials);
+	} else {
+		sendRequest("UserLoginRequest.php",
+			"UserId=" + username +
+			"&initial_app_strings=" + initial_app_strings +
+			"&RegionCode=" + region_code +
+			"&Password=" + password,
+			loginResponse => {
+				if (loginResponse.status !== 200) {
+					loginFailureCallback();
 				} else {
-					sessionid = encodeURIComponent(loginResponse.vehicleInfo[0].custom_sessionid);
-					vin = encodeURIComponent(loginResponse.vehicleInfo[0].vin);
-					carname = loginResponse.vehicleInfo[0].nickname;
+					// Get the session id and VIN for future API calls.
+					// Sometimes the results from the API include a VehicleInfoList array, sometimes they omit it!
+					let credentials = {};
+					if (loginResponse.VehicleInfoList) {
+						credentials = {
+							sessionid: encodeURIComponent(loginResponse.VehicleInfoList.vehicleInfo[0].custom_sessionid),
+							vin: encodeURIComponent(loginResponse.VehicleInfoList.vehicleInfo[0].vin)
+						};
+						carname = loginResponse.VehicleInfoList.vehicleInfo[0].nickname;
+
+					} else {
+						credentials = {
+							sessionid: encodeURIComponent(loginResponse.vehicleInfo[0].custom_sessionid),
+							vin: encodeURIComponent(loginResponse.vehicleInfo[0].vin)
+						};
+						carname = loginResponse.vehicleInfo[0].nickname;
+					}
+					storedCredentials = credentials;
+					successCallback(credentials);
 				}
-				successCallback();
-			}
-		},
-		loginFailureCallback);
+			},
+			loginFailureCallback);
+	}
 };
 /**
 * Get the battery information from the API.
 **/
 exports.getBatteryStatus = (successCallback, failureCallback) => {
-	login(() => sendRequest("BatteryStatusRecordsRequest.php",
-		"custom_sessionid=" + sessionid +
+	login((credentials) => sendRequest("BatteryStatusRecordsRequest.php",
+		"custom_sessionid=" + credentials.sessionid +
 		"&RegionCode=" + region_code +
-		"&VIN=" + vin,
-		successCallback,
-		failureCallback));
-};
-exports.getCabinTemperature = (successCallback, failureCallback) => {
-	login(() => sendRequest("auth-encrypt.php",
-		"custom_sessionid=" + sessionid +
-		"&RegionCode=" + region_code +
-		"&VIN=" + vin,
+		"&VIN=" + credentials.vin,
 		successCallback,
 		failureCallback));
 };
@@ -141,11 +145,11 @@ exports.getCabinTemperature = (successCallback, failureCallback) => {
 * Enable the climate control in the car.
 **/
 exports.sendPreheatCommand = (successCallback, failureCallback) => {
-	login(() => sendRequest("ACRemoteRequest.php",
+	login((credentials) => sendRequest("ACRemoteRequest.php",
 		"UserId=" + username +
-		"&custom_sessionid=" + sessionid +
+		"&custom_sessionid=" + credentials.sessionid +
 		"&RegionCode=" + region_code +
-		"&VIN=" + vin,
+		"&VIN=" + credentials.vin,
 		successCallback,
 		failureCallback));
 };
@@ -154,11 +158,11 @@ exports.sendPreheatCommand = (successCallback, failureCallback) => {
 * Enable the climate control in the car.
 **/
 exports.sendCoolingCommand = (successCallback, failureCallback) => {
-	login(() => sendRequest("ACRemoteRequest.php",
+	login((credentials) => sendRequest("ACRemoteRequest.php",
 		"UserId=" + username +
-		"&custom_sessionid=" + sessionid +
+		"&custom_sessionid=" + credentials.sessionid +
 		"&RegionCode=" + region_code +
-		"&VIN=" + vin,
+		"&VIN=" + credentials.vin,
 		successCallback,
 		failureCallback));
 };
@@ -167,11 +171,11 @@ exports.sendCoolingCommand = (successCallback, failureCallback) => {
 * Disable the climate control in the car.
 **/
 exports.sendClimateControlOffCommand = (successCallback, failureCallback) => {
-	login(() => sendRequest("ACRemoteOffRequest.php",
+	login((credentials) => sendRequest("ACRemoteOffRequest.php",
 		"UserId=" + username +
-		"&custom_sessionid=" + sessionid +
+		"&custom_sessionid=" + credentials.sessionid +
 		"&RegionCode=" + region_code +
-		"&VIN=" + vin,
+		"&VIN=" + credentials.vin,
 		successCallback,
 		failureCallback));
 };
@@ -180,11 +184,11 @@ exports.sendClimateControlOffCommand = (successCallback, failureCallback) => {
 * Start charging the car.
 **/
 exports.sendStartChargingCommand = (successCallback, failureCallback) => {
-	login(() => sendRequest("BatteryRemoteChargingRequest.php",
+	login((credentials) => sendRequest("BatteryRemoteChargingRequest.php",
 		"UserId=" + username +
-		"&custom_sessionid=" + sessionid +
+		"&custom_sessionid=" + credentials.sessionid +
 		"&RegionCode=" + region_code +
-		"&VIN=" + vin,
+		"&VIN=" + credentials.vin,
 		successCallback,
 		failureCallback));
 };
@@ -193,11 +197,11 @@ exports.sendStartChargingCommand = (successCallback, failureCallback) => {
 * Request the API fetch updated data from the car.
 **/
 exports.sendUpdateCommand = (successCallback, failureCallback) => {
-	login(() => sendRequest("BatteryStatusCheckRequest.php",
+	login((credentials) => sendRequest("BatteryStatusCheckRequest.php",
 		"UserId=" + username +
-		"&custom_sessionid=" + sessionid +
+		"&custom_sessionid=" + credentials.sessionid +
 		"&RegionCode=" + region_code +
-		"&VIN=" + vin,
+		"&VIN=" + credentials.vin,
 		successCallback,
 		failureCallback));
 };
@@ -217,6 +221,13 @@ exports.setTimoutSource = (source) => {
 exports.getCarName = () => {
 	return carname;
 };
+
+/**
+ * Stored credentials placed in session store while skill is open, save repeated logins.
+ * If not null, bypass login.
+ */
+exports.getStoredCredentials = () => { return storedCredentials; };
+exports.setStoredCredentials = (creds) => storedCredentials = creds;
 /**
 * Encrypt the password for use with API calls.
 **/
