@@ -21,11 +21,9 @@
                         "heat the car up",
                         "preheat for me",
                         "start the heaters",
-                        "turn the heater on",
                         "turn on the heater",
                         "turn the heat on",
                         "turn on the heat",
-                        "warm up",
                         "make it toasty for me",
                         "it's cold outside",
                         "heat my seat up"
@@ -68,6 +66,7 @@
                     "name": "UpdateIntent",
                     "slots": [],
                     "samples": [
+                        "refresh",
                         "to update",
                         "update",
                         "status",
@@ -100,6 +99,11 @@
                     "name": "ChargeIntent",
                     "slots": [],
                     "samples": [
+                        "how full",
+                        "charge",
+                        "state of charge",
+                        "for state of charge",
+                        "ask the leaf how much charge",
                         "percent",
                         "percentage",
                         "how much charge",
@@ -107,30 +111,14 @@
                         "what percent",
                         "what percent battery",
                         "battery",
-                        "battery percentage",
-                        "charge"
+                        "battery percentage"
                     ]
                 },
                 {
-                    "name" : "EnergyIntent",
-                    "slots": [],
-                    "samples": [
-                        "how many kilowatts",
-                        "how many bars",
-                        "how much energy",
-                        "hot much energy it has",
-                        "precis",
-                        "how much power",
-                        "how much power it has",
-                        "bars"
-                    ]
-
-
-                },
-                { 
                     "name": "ChargingIntent",
                     "slots": [],
                     "samples": [
+                        "are you charging",
                         "charging",
                         "is it charging",
                         "if it's charging",
@@ -145,6 +133,8 @@
                     "name": "ConnectedIntent",
                     "slots": [],
                     "samples": [
+                        "are you connected",
+                        "are you plugged in",
                         "connected",
                         "connected to power",
                         "connected to mains",
@@ -159,7 +149,7 @@
                     "name": "StartChargingIntent",
                     "slots": [],
                     "samples": [
-                        "charge",
+                        "begin charging",
                         "charge now",
                         "start charging"
                     ]
@@ -175,6 +165,22 @@
                 {
                     "name": "AMAZON.StopIntent",
                     "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "EnergyIntent",
+                    "slots": [],
+                    "samples": [
+                        "how many kilo wats",
+                        "how many bars",
+                        "how much energy it has",
+                        "how much energy",
+                        "how much power it has",
+                        "how much power"
+                    ]
                 }
             ],
             "types": []
