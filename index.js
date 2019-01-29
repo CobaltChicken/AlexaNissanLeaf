@@ -73,8 +73,8 @@ function asOf(battery) {
 	}
 }
 // Build a response to send back to Alexa.
-function buildResponse(output, card, shouldEndSession) {
-	return {
+function buildResponse(output, card, shouldEndSession, attrs) {
+	let resp = {
 		version: "1.0",
 		response: {
 			outputSpeech: {
@@ -84,7 +84,12 @@ function buildResponse(output, card, shouldEndSession) {
 			card,
 			shouldEndSession
 		}
+		
 	};
+	if(attrs) {
+		resp.sessionAttributes = attrs;
+	}
+	return resp;
 }
 
 // Helper to build the text response for range/battery status.
@@ -157,6 +162,8 @@ function buildConnectedStatus(connected) {
 
 // Handling incoming requests
 exports.handler = (event, context) => {
+	let inSession = event.session && !event.session.new;
+	let returnSession = inSession ? event.session.attributes : null;
 
 	// Helper to return a response with a card./
 	// if card ommited - build one
@@ -166,7 +173,7 @@ exports.handler = (event, context) => {
 			"title": title,
 			"content": text
 		};
-		context.succeed(buildResponse(text, theCard));
+		context.succeed(buildResponse(text, theCard, !inSession, returnSession));
 	};
 
 	try {
@@ -197,14 +204,24 @@ exports.handler = (event, context) => {
 		}
 
 		// Shared callbacks.
-		const exitCallback = () => context.succeed(buildResponse("Goodbye!"));
+		const exitCallback = () => context.succeed(buildResponse("Goodbye!", null, true));
 		const helpCallback = () => context.succeed(buildResponse("What would you like to do? You can preheat the car or ask for battery status.", null, false));
+		if(inSession && event.session.attributes && event.session.attributes.carCredentials) {
+			car.setStoredCredentials(event.session.attributes.carCredentials);
+		}
 		car.setLoginFailure(() => sendResponse("Authorisation Failure", "Unable to login to Nissan Services, credentials are wrong, or service is down."));
 		// try to get socket timeout before Lambda timeout
 		car.setTimoutSource(() => context.getRemainingTimeInMillis() - 500);
 
 		// Handle launches without intents by just asking what to do.		
 		if (event.request.type === "LaunchRequest") {
+			sendProgressMessage('Asking car to send latest data', event);
+			car.sendUpdateCommand(()=> {
+				inSession = true;
+				returnSession = {carCredentials: car.getStoredCredentials()};
+				sendResponse('Fresh data requested from car');
+
+			});
 			helpCallback();
 		} else if (event.request.type === "IntentRequest") {
 			sendProgressMessage("Just a moment while I talk to the car.", event);
