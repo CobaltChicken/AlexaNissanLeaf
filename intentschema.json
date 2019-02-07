@@ -54,7 +54,6 @@
                         "air conditioning off",
                         "turn air conditioning off",
                         "to turn the air conditioning off",
-                        "save energy",
                         "turn the heater off",
                         "stop preheat",
                         "turn off the heater",
@@ -99,6 +98,8 @@
                     "name": "ChargeIntent",
                     "slots": [],
                     "samples": [
+                        "your charge",
+                        "battery status",
                         "how full",
                         "charge",
                         "state of charge",
@@ -174,7 +175,11 @@
                     "name": "EnergyIntent",
                     "slots": [],
                     "samples": [
-                        "how many kilo wats",
+                        "your bars",
+                        "kilowatt hours",
+                        "your energy",
+                        "for energy",
+                        "how many kilowatts",
                         "how many bars",
                         "how much energy it has",
                         "how much energy",
@@ -184,6 +189,47 @@
                 }
             ],
             "types": []
-        }
+        },
+        "dialog": {
+            "intents": [
+                {
+                    "name": "PreheatIntent",
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "Confirm.Intent.977056549674"
+                    },
+                    "slots": []
+                },
+                {
+                    "name": "StartChargingIntent",
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "Confirm.Intent.1302356915549"
+                    },
+                    "slots": []
+                }
+            ],
+            "delegationStrategy": "ALWAYS"
+        },
+        "prompts": [
+            {
+                "id": "Confirm.Intent.977056549674",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "confirm switching on climate control"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Intent.1302356915549",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Confirm car should start charging"
+                    }
+                ]
+            }
+        ]
     }
 }
