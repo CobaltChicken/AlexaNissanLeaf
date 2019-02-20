@@ -193,7 +193,7 @@ exports.handler = (event, context, callback) => {
 					);
 					break;
 				case "RangeIntent":
-					withBattery(format.buildBatteryStatus);
+					withBattery(format.buildRangeStatus);
 					break;
 				case "ChargeIntent":
 					withBattery(format.buildBatteryStatus);

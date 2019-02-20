@@ -1,6 +1,7 @@
 'use strict';
 const batterySize = process.env.batterysize ? process.env.batterysize : 30;
 const car = require('./leaf');
+const milesPerMeter = 0.000621371;
 // barcount is half figure
 function bars(barcount) {
 	barcount /= 10;
@@ -34,8 +35,8 @@ exports.buildBatteryCard = (battery) => {
 };
 // just charge status
 exports.energyResponse = (battery) => {
-	let result = `You have ${Math.round(battery.BatteryStatusRecords.BatteryStatus.BatteryRemainingAmountWH / 1000)} kilowatt hours`;
-	result += ` which gives you ${bars(battery.BatteryStatusRecords.BatteryStatus.BatteryRemainingAmount)} out of ${bars(battery.BatteryStatusRecords.BatteryStatus.BatteryCapacity)} bars`;
+	let result = `You have ${Math.round(battery.BatteryStatusRecords.BatteryStatus.BatteryRemainingAmountWH / 1000)} kilowatt hours
+	which gives you ${bars(battery.BatteryStatusRecords.BatteryStatus.BatteryRemainingAmount)} out of ${bars(battery.BatteryStatusRecords.BatteryStatus.BatteryCapacity)} bars`;
 	return result;
 };
 
@@ -76,13 +77,12 @@ exports.buildConnectedStatus = (connected) => {
 // Helper to build the text response for range/battery status.
 exports.buildBatteryStatus = (battery) => {
 	console.log(JSON.stringify(battery));
-	const milesPerMeter = 0.000621371;
-	let response = `You have ${Math.floor((battery.BatteryStatusRecords.BatteryStatus.BatteryRemainingAmount / battery.BatteryStatusRecords.BatteryStatus.BatteryCapacity) * 100)}% battery which Nissan's Guessometer says will get you ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOn * milesPerMeter)} miles with the air conditioning on, or ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOff * milesPerMeter)} with the air conditioner off. Based on what I know about the Nissan LEAF, you can expect to get as little as ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOn * milesPerMeter * 0.8)} miles in worse-case conditions or ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOff * milesPerMeter * 1.2)} miles in ideal conditions. `;
+	let response = `You have ${Math.floor((battery.BatteryStatusRecords.BatteryStatus.BatteryRemainingAmount / battery.BatteryStatusRecords.BatteryStatus.BatteryCapacity) * 100)}% battery`;
 
 	if (battery.BatteryStatusRecords.PluginState == "CONNECTED") {
-		response += "The car is plugged in";
+		response += ", The car is plugged in";
 	} else {
-		response += "The car is not plugged in";
+		response += ", The car is not plugged in";
 	}
 
 	if (battery.BatteryStatusRecords.BatteryStatus.BatteryChargingStatus != "NOT_CHARGING") {
@@ -90,5 +90,12 @@ exports.buildBatteryStatus = (battery) => {
 	}
 
 	return response + ".";
+};
+
+exports.buildRangeStatus = (battery) => {
+	return `Nissan's Guessometer says you'll get ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOn * milesPerMeter)} miles with the air conditioning on,
+	 or ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOff * milesPerMeter)} with the air conditioner off.
+	  Based on what I know about the Nissan LEAF, you can expect to get as little as ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOn * milesPerMeter * 0.8)} miles in worse-case conditions
+	   or ${Math.floor(battery.BatteryStatusRecords.CruisingRangeAcOff * milesPerMeter * 1.2)} miles in ideal conditions.`;
 };
 
