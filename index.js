@@ -132,8 +132,8 @@ exports.handler = (event, context, callback) => {
 			if (inSession && returnSession.battery) { // has cached battery data
 				sendResponse(null, formatter(returnSession.battery));
 			} else {  // must retrive data
+				sendProgressMessage("Just a moment while I ask the car.", event);
 				car.getBatteryStatus((state) => {
-					sendProgressMessage("Just a moment while I ask the car.", event);
 					if (inSession) {
 						returnSession.battery = state; // cache battery data if in session
 					}
