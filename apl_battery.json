@@ -1,0 +1,57 @@
+{
+    "document": {
+        "type": "APL",
+        "version": "1.0",
+        "theme": "dark",
+        "import": [],
+        "resources": [],
+        "styles": {},
+        "layouts": {},
+        "mainTemplate": {
+            "parameters": [
+                "payload"
+            ],
+            "items": [
+                {
+                    "type": "Container",
+                    "direction": "column",
+                    "items": [
+                        {
+                            "type": "Container",
+                            "direction": "row",
+                            "paddingTop": "20",
+                            "alignItems": "center",
+                            "items": [
+                                {
+                                    "type": "Image",
+                                    "width": "200",
+                                    "source": "${payload.statesUrl}${payload.bars}${payload.chargeflg}.png"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "Container",
+                    "direction": "row",
+                    "items": [
+                        {
+                            "type": "Text",
+                            "text": "<b>As of:</b>"
+                        },
+                        {
+                            "type": "Text",
+                            "text": "${payload.asOf}"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "datasources": {
+        "statesUrl": "http://d60a353slv0bi.cloudfront.net/battery-state/battery",
+        "bars": 2,
+        "chargeflg": "c",
+        "asOf": "15:32"
+    }
+}
