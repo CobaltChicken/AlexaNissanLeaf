@@ -9,6 +9,8 @@ I've added two new environmental variables.
 
 batterysize (in KwH)
 leafpic  Url of an image for the home cards
+The Nissan connect credentials are moved from environmental variables into the AWS secretes store under the 
+name nissan-connect-credentials. Secret consists of userId, password, regionCode 
 
 ## Setup instructions
 You can follow [Toby Riding's great step-by-step guide on the wiki](https://github.com/arussell/AlexaNissanLeaf/wiki).

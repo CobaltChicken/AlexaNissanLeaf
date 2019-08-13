@@ -5,6 +5,7 @@ let querystring = require('querystring');
 const apiPath = "/api_v190426_NE/gdc/";
 // Require encryption.js to encrypt the password.
 var Encryption = require('./encryption.js');
+var Credentials = require('./credentials.js');
 
 // Do not change this value, it is static.
 let initial_app_strings = "9s5rfKVuMrT03RtzajWNcA";
@@ -96,15 +97,15 @@ async function login() {
 		console.log('Reusing credentials');
 		return (storedCredentials);
 	} else {
-		let initResponse = await sendRequest("InitialApp_v2.php",
+		let [initResponse, creds] = await Promise.all([sendRequest("InitialApp_v2.php",
 			"RegionCode=" + region_code +
 			"&initial_app_str=" + initial_app_strings +
-			"&lg=en_US");
-		let encoded_password = querystring.escape(encrypt(process.env.password, initResponse.baseprm));
+			"&lg=en_US"), Credentials.getCredentials()]);
+		let encoded_password = querystring.escape(encrypt(creds.password, initResponse.baseprm));
 		let loginResponse = await sendRequest("UserLoginRequest.php",
-			"UserId=" + username +
+			"UserId=" + creds.userId +
 			"&initial_app_str=" + initial_app_strings +
-			"&RegionCode=" + region_code +
+			"&RegionCode=" + creds.regionCode +
 			"&Password=" + encoded_password);
 
 		// Get the session id and VIN for future API calls.
